@@ -69,6 +69,26 @@ The basic blocks are formed using the function `formBlocks`. Cfg is generated an
     $ dot output.dot -Tpdf -o cfg.pdf
 My code samples resides in mycfg directory. Json parsing is achieved by using [nlohmann json C++ library][]: 
 
+### Lesson 3: Local Optimization and Dead code elimination
+1. Local optimization work within a single basic block (intra-procedural)
+2. Global optimizations work on an entire function (intra-procedural)
+    - They have to deal with control flow
+3. Inter-procedural optimizations: between different scopes.
+    - looks at calls from one function to another
+
+#### Dead Code Elimination
+- removes unreachable or unused instructions
+- Algorithm:
+
+    used = {}
+    for instr in func:
+        used += instr.args
+    
+    for instr in func:
+        if instr.dest and instr.dest not-belong to used
+            delete instr
+
+
 [pip]: https://packaging.python.org/tutorials/installing-packages/
 [cs6120]: https://www.cs.cornell.edu/courses/cs6120/2020fa/
 [turnt]: https://github.com/cucapra/turnt
