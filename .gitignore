@@ -19,3 +19,7 @@ mycfg/.ninja_log
 mycfg/mycfg
 mycfg/mycfg.py
 mycfg/setup.sh
+mycfg/*.dot
+mycfg/*.pdf
+mycfg/*.json
+mycfg/*.dSYM

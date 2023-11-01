@@ -1,13 +1,18 @@
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <stdexcept>
 
 using basic_block = std::vector<nlohmann::json>;
+using block_map = std::map<std::string, basic_block>;
+using cfg = std::map<std::string, std::vector<std::string>>;
+
 const std::set<std::string> TERMINATORS = {"jmp", "br", "ret"};
-std::map<std::string, basic_block> block_map;
+// std::map<std::string, basic_block> block_map;
+// std::map<std::string, std::vector<std::string>> cfg;
 
 std::string getBlockName(basic_block& block) {
   // Get the name of the basic block
@@ -24,14 +29,14 @@ std::string getBlockName(basic_block& block) {
   } else if (firstInstr.find("labels") != firstInstr.end()) {
     name = firstInstr["labels"];
   } else {
-    name = "b{ " + std::to_string(blockcount++) + " }";
+    name = "b" + std::to_string(blockcount++);
   }
   return name;
 }
 
-void formBlocks(const nlohmann::json& body) {
+block_map formBlocks(const nlohmann::json& body) {
   basic_block curBlock;
-
+  block_map blockmap;
   for (const auto& instr : body) {
     if (instr.find("op") != instr.end()) {  // an actual instruction
       curBlock.push_back(instr);
@@ -44,7 +49,7 @@ void formBlocks(const nlohmann::json& body) {
         // }
 
         // Add blocks to tne map of blocks
-        block_map[getBlockName(curBlock)] = curBlock;
+        blockmap[getBlockName(curBlock)] = curBlock;
 
         curBlock.clear();
       }
@@ -54,8 +59,10 @@ void formBlocks(const nlohmann::json& body) {
       //   std::cout << blockInstr << std::endl;
       // }
 
-      // Add blocks to tne map of blocks
-      block_map[getBlockName(curBlock)] = curBlock;
+      // Add blocks to the map of blocks
+      if (curBlock.size() > 0) {
+        blockmap[getBlockName(curBlock)] = curBlock;
+      }
 
       curBlock.clear();
       curBlock.push_back(instr);
@@ -67,39 +74,104 @@ void formBlocks(const nlohmann::json& body) {
   //   std::cout << blockInstr << std::endl;
   // }
   // Add blocks to tne map of blocks
-  block_map[getBlockName(curBlock)] = curBlock;
+  blockmap[getBlockName(curBlock)] = curBlock;
   curBlock.clear();
+  return blockmap;
 }
 
-void printBlocks(){
-// Print all the basic blocks in a program
-  for(const auto& pair : block_map){
+void printBlocks(block_map& blockmap) {
+  // Print all the basic blocks in a program
+  for (const auto& pair : blockmap) {
     std::cout << pair.first << std::endl;
-    for(const auto& instr : pair.second){
+    for (const auto& instr : pair.second) {
       std::cout << instr << std::endl;
     }
   }
 }
 
+void printCfg(cfg& blockcfg) {
+  // Print the cfg
+  for (const auto& b : blockcfg) {
+    std::cout << b.first << " : " << " [ ";
+    for (const auto& label : b.second) {
+      std::cout << label << " ";
+    }
+    std::cout << " ]" << std::endl;
+  }
+  std::cout << std::endl;
+}
+
+cfg formCfg(block_map& blockmap) {
+  // cfg is a map which have mapping from a Label to its successors
+  cfg blockcfg;
+  for (auto itr = blockmap.begin(); itr != blockmap.end(); ++itr) {
+    auto pair = *itr;
+    auto lastInstr = pair.second.back();
+    if ((lastInstr.find("op") != lastInstr.end())) {
+      if (lastInstr["op"] == "jmp" || lastInstr["op"] == "br") {
+        // Last instruction is "jmp" or "br"
+        // Add edge from the block to the last.dest
+        std::vector<std::string> succ;
+        for (auto l : lastInstr["labels"]) {
+          succ.emplace_back(l);
+        }
+        blockcfg[pair.first] = succ;
+      } else if (lastInstr["op"] == "ret") {
+        // Last instruction is a return statement
+        std::vector<std::string> succ;
+        blockcfg[pair.first] = succ;
+      } else {
+        // point the current block to the next block if available
+        auto next = std::next(itr);
+        std::vector<std::string> succ;
+        if (next != blockmap.end()) {
+          auto p = *next;
+          auto l = p.first;
+          succ.push_back(l);
+        }
+        blockcfg[pair.first] = succ;
+      }
+    }
+  }
+  return blockcfg;
+}
+
+void generateDigraph(const nlohmann::json& func, block_map& blockmap, cfg& blockcfg) {
+  std::ofstream dotfile("output.dot");
+  dotfile << "digraph " << func["name"] << " {" << std::endl;
+  for(const auto& block : blockmap){
+    dotfile << "  " << block.first << ";" << std::endl;
+  }
+  for(const auto& b : blockcfg ){
+    for(const auto& label : b.second){
+      dotfile << "  " << b.first << " -> " << label << std::endl;
+    }
+  }
+  dotfile << "}" << std::endl;
+  dotfile.close();
+}
+
 int main() {
   // Load JSON data from stdin
   nlohmann::json prog;
-  try {
-        std::cin >> prog;
-    } catch (const std::ios_base::failure& e) {
-        // Catch and ignore the BrokenPipeError
-        if (e.code() != std::io_errc::stream) {
-            throw; // Re-throw if it's not a BrokenPipeError
-        }
-    }
-  // std::ifstream f("prog.json");
-  // prog = nlohmann::json::parse(f);
+  // try {
+  //   std::cin >> prog;
+  // } catch (const std::ios_base::failure& e) {
+  //   // Catch and ignore the BrokenPipeError
+  //   if (e.code() != std::io_errc::stream) {
+  //     throw;  // Re-throw if it's not a BrokenPipeError
+  //   }
+  // }
+  std::ifstream f("jmp.json");
+  prog = nlohmann::json::parse(f);
 
   for (const auto& func : prog["functions"]) {
-    formBlocks(func["instrs"]);
+    auto blockmap = formBlocks(func["instrs"]);
+    printBlocks(blockmap);
+    auto blockcfg = formCfg(blockmap);
+    printCfg(blockcfg);
+    generateDigraph(func, blockmap, blockcfg);
   }
-
-  printBlocks();
 
   return 0;
 }
