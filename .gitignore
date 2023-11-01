@@ -23,3 +23,4 @@ mycfg/*.dot
 mycfg/*.pdf
 mycfg/*.json
 mycfg/*.dSYM
+gitpushpull.sh

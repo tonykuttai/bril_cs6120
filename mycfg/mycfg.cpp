@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <stdexcept>
+#include "dualoutputstream.hpp"
 
 using basic_block = std::vector<nlohmann::json>;
 using block_map = std::map<std::string, basic_block>;
@@ -49,7 +50,9 @@ block_map formBlocks(const nlohmann::json& body) {
         // }
 
         // Add blocks to tne map of blocks
-        blockmap[getBlockName(curBlock)] = curBlock;
+        if (curBlock.size() > 0) {
+          blockmap[getBlockName(curBlock)] = curBlock;
+        }
 
         curBlock.clear();
       }
@@ -74,7 +77,10 @@ block_map formBlocks(const nlohmann::json& body) {
   //   std::cout << blockInstr << std::endl;
   // }
   // Add blocks to tne map of blocks
-  blockmap[getBlockName(curBlock)] = curBlock;
+  if (curBlock.size() > 0) {
+    blockmap[getBlockName(curBlock)] = curBlock;
+  }
+
   curBlock.clear();
   return blockmap;
 }
@@ -92,7 +98,8 @@ void printBlocks(block_map& blockmap) {
 void printCfg(cfg& blockcfg) {
   // Print the cfg
   for (const auto& b : blockcfg) {
-    std::cout << b.first << " : " << " [ ";
+    std::cout << b.first << " : "
+              << " [ ";
     for (const auto& label : b.second) {
       std::cout << label << " ";
     }
@@ -136,40 +143,53 @@ cfg formCfg(block_map& blockmap) {
   return blockcfg;
 }
 
-void generateDigraph(const nlohmann::json& func, block_map& blockmap, cfg& blockcfg) {
-  std::ofstream dotfile("output.dot");
-  dotfile << "digraph " << func["name"] << " {" << std::endl;
-  for(const auto& block : blockmap){
-    dotfile << "  " << block.first << ";" << std::endl;
+void generateDigraph(const nlohmann::json& func, block_map& blockmap,
+                     cfg& blockcfg) {
+  // Create a DualOutputStream that writes to "output.dot" and std::cout
+  DualOutputStream dualStream("output.dot");
+  dualStream << "digraph " << func["name"] << " {" << std::endl;
+  for (const auto& block : blockmap) {
+    dualStream << "  " << block.first << ";" << std::endl;
   }
-  for(const auto& b : blockcfg ){
-    for(const auto& label : b.second){
-      dotfile << "  " << b.first << " -> " << label << std::endl;
+  for (const auto& b : blockcfg) {
+    for (const auto& label : b.second) {
+      dualStream << "  " << b.first << " -> " << label << std::endl;
     }
   }
-  dotfile << "}" << std::endl;
-  dotfile.close();
+  dualStream << "}" << std::endl;
 }
 
-int main() {
-  // Load JSON data from stdin
-  nlohmann::json prog;
-  // try {
-  //   std::cin >> prog;
-  // } catch (const std::ios_base::failure& e) {
-  //   // Catch and ignore the BrokenPipeError
-  //   if (e.code() != std::io_errc::stream) {
-  //     throw;  // Re-throw if it's not a BrokenPipeError
-  //   }
+int main(int argc, char* argv[]) {
+  //  // Check if the user provided the filename as a command-line argument
+  //  if(argc != 2){
+  //   std::cerr << "Usage: " << argv[0] << " <input_file_json>" << std::endl;
+  //   return 1;
+  //  }
+  // std::string inputJson = argv[1];
+  // std::ifstream f(inputJson);
+  // if (!f.is_open()) {
+  //   std::cerr << "Error: Unable to open the input file." << std::endl;
+  //   return 1;  // Exit with an error code
   // }
-  std::ifstream f("jmp.json");
-  prog = nlohmann::json::parse(f);
+
+  // Load JSON data from stdin
+  nlohmann::json prog; 
+  try {
+    std::cin >> prog;
+  } catch (const std::ios_base::failure& e) {
+    // Catch and ignore the BrokenPipeError
+    if (e.code() != std::io_errc::stream) {
+      throw;  // Re-throw if it's not a BrokenPipeError
+    }
+  }
+  // std::ifstream f("anotherjmpret.json");
+  // prog = nlohmann::json::parse(f);
 
   for (const auto& func : prog["functions"]) {
     auto blockmap = formBlocks(func["instrs"]);
-    printBlocks(blockmap);
+    // printBlocks(blockmap);
     auto blockcfg = formCfg(blockmap);
-    printCfg(blockcfg);
+    // printCfg(blockcfg);
     generateDigraph(func, blockmap, blockcfg);
   }
 
