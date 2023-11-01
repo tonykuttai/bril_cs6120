@@ -58,9 +58,7 @@ Install it with [pip][]:
 
 Then run all the tests by typing `make test`.
 
-[pip]: https://packaging.python.org/tutorials/installing-packages/
-[cs6120]: https://www.cs.cornell.edu/courses/cs6120/2020fa/
-[turnt]: https://github.com/cucapra/turnt
+
 
 My Contributions
 -----------------
@@ -69,5 +67,9 @@ The instructor code is written in python. Focuses on writing the code in C++.
 The basic blocks are formed using the function `formBlocks`. Cfg is generated and `geenrateDigraph` methiod writes to a `output.dot` file. The `output.dot` file can be converted to a pdf by using the following command:
 
     $ dot output.dot -Tpdf -o cfg.pdf
-My code samples resides in mycfg directory. Json parsing is achieved by using [nlohmann json C++ library]: https://github.com/nlohmann/json
-    
+My code samples resides in mycfg directory. Json parsing is achieved by using [nlohmann json C++ library][]: 
+
+[pip]: https://packaging.python.org/tutorials/installing-packages/
+[cs6120]: https://www.cs.cornell.edu/courses/cs6120/2020fa/
+[turnt]: https://github.com/cucapra/turnt
+[nlohmann json C++ library]: https://github.com/nlohmann/json
