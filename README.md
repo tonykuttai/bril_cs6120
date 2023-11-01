@@ -61,3 +61,12 @@ Then run all the tests by typing `make test`.
 [pip]: https://packaging.python.org/tutorials/installing-packages/
 [cs6120]: https://www.cs.cornell.edu/courses/cs6120/2020fa/
 [turnt]: https://github.com/cucapra/turnt
+
+My Contributions
+-----------------
+The instructor code is written in python. I have written the code in C++.
+### Lesson 2: Introduction to Bril
+The basic blocks are formed using the function `formBlocks`. Cfg is generated and `geenrateDigraph` methiod writes to a `output.dot` file. The `output.dot` file can be converted to a pdf by using the following command:
+
+    $ dot output.dot -Tpdf -o cfg.pdf
+    
