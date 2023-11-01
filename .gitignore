@@ -14,3 +14,8 @@ __pycache__
 # vim swap files
 *.swp
 *.swo
+
+mycfg/.ninja_log
+mycfg/mycfg
+mycfg/mycfg.py
+mycfg/setup.sh
