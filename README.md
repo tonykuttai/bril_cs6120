@@ -80,13 +80,13 @@ My code samples resides in mycfg directory. Json parsing is achieved by using [n
 - removes unreachable or unused instructions
 - Algorithm:
 
-    used = {}
-    for instr in func:
-        used += instr.args
-    
-    for instr in func:
-        if instr.dest and instr.dest not-belong to used
-            delete instr
+        used = {}
+        for instr in func:
+            used += instr.args
+        
+        for instr in func:
+            if instr.dest and instr.dest not-belong to used
+                delete instr
 
 
 [pip]: https://packaging.python.org/tutorials/installing-packages/
